@@ -3,7 +3,7 @@ import {
   Search, Plus, Edit2, Trash2, Moon, Sun, Check, X, 
   Upload, Download, Key, Users, Award, 
   ShieldAlert, Sparkles, Filter, Database, AlertCircle, RefreshCw,
-  Sliders, Phone, Mail, Globe, MapPin, FileUp, Lock, User, LogOut, Info
+  Sliders, Phone, Mail, Globe, MapPin, FileUp, Lock, User, LogOut
 } from 'lucide-react';
 
 // ==========================================
@@ -52,140 +52,10 @@ const apiKey = "";
 // ==========================================
 // INITIAL ENRICHED MOCK DATA
 // ==========================================
-const INITIAL_VOLUNTEERS: Volunteer[] = [
-  {
-    id: "v-1",
-    name: "Jonathan Mercer",
-    dob: "1985-04-12",
-    privilege: "Elder",
-    congregation: "Oakwood Pines",
-    circuit: "FL-10-A",
-    lastConventionDate: "2025-08-15",
-    assignmentHeld: "Attendants",
-    recommendedForCommitteeAssistant: true,
-    phone: "407-555-0143",
-    email: "j.mercer@gmail.com",
-    jwpubEmail: "jonathan.mercer@jwpub.org",
-    address: "1428 Whispering Pines Dr, Orlando, FL 32801",
-    evaluation: {
-      grade: "A",
-      comments: "Outstanding coordination skills during the afternoon rush. Exceptionally reliable and highly recommended for broader committee work.",
-      recommendation: "Recommend for advancement",
-      evaluatedAt: "2025-08-15T17:30:00.000Z"
-    }
-  },
-  {
-    id: "v-2",
-    name: "Sarah Jenkins",
-    dob: "1997-11-22",
-    privilege: "Pioneer",
-    congregation: "Valley View",
-    circuit: "FL-10-A",
-    lastConventionDate: "2025-08-15",
-    assignmentHeld: "First Aid",
-    recommendedForCommitteeAssistant: false,
-    phone: "407-555-0189",
-    email: "sarah.j.97@yahoo.com",
-    jwpubEmail: "s.jenkins@jwpub.org",
-    address: "892 Meadowbrook Ln, Apopka, FL 32703",
-    evaluation: {
-      grade: "B",
-      comments: "Very caring and responsive. Handled incident documentation efficiently, though could use slightly faster triage decisions under pressure.",
-      recommendation: "Keep in current assignment",
-      evaluatedAt: "2025-08-16T11:00:00.000Z"
-    }
-  },
-  {
-    id: "v-3",
-    name: "Marcus Brody",
-    dob: "1990-07-03",
-    privilege: "Ministerial Servant",
-    congregation: "Metro Heights",
-    circuit: "FL-05-C",
-    lastConventionDate: "2024-06-20",
-    assignmentHeld: "Food Service",
-    recommendedForCommitteeAssistant: true,
-    phone: "321-555-0112",
-    email: "marcus.brody@outlook.com",
-    jwpubEmail: "",
-    address: "405 Urban Plaza, Apt 3B, Orlando, FL 32804",
-    evaluation: {
-      grade: "A",
-      comments: "Excellent inventory control. Always arrives early and stays late to clean. Very humble and hardworking attitude.",
-      recommendation: "Recommend for advancement",
-      evaluatedAt: "2024-06-20T19:15:00.000Z"
-    }
-  },
-  {
-    id: "v-4",
-    name: "Elena Rostova",
-    dob: "2003-01-30",
-    privilege: "Publisher",
-    congregation: "Oakwood Pines",
-    circuit: "FL-12-B",
-    lastConventionDate: "2025-08-15",
-    assignmentHeld: "Cleaning & Maintenance",
-    recommendedForCommitteeAssistant: false,
-    phone: "407-555-0174",
-    email: "elena.rostova@icloud.com",
-    jwpubEmail: "elena.rostova@jwpub.org",
-    address: "512 Pinecrest Way, Winter Park, FL 32789",
-    evaluation: {
-      grade: null,
-      comments: "",
-      recommendation: null,
-      evaluatedAt: null
-    }
-  },
-  {
-    id: "v-5",
-    name: "David Vance",
-    dob: "1978-09-05",
-    privilege: "Elder",
-    congregation: "Ridgefield",
-    circuit: "FL-10-A",
-    lastConventionDate: "2025-08-15",
-    assignmentHeld: "Attendants (Captain)",
-    recommendedForCommitteeAssistant: true,
-    phone: "352-555-0199",
-    email: "david.vance@workmail.net",
-    jwpubEmail: "david.vance@jwpub.org",
-    address: "1004 Ridgefield Bypass, Clermont, FL 34711",
-    evaluation: {
-      grade: "A",
-      comments: "Superb management of the main arena seating. Communicates clearly and remains incredibly calm under stress. Essential assistant.",
-      recommendation: "Recommend for advancement",
-      evaluatedAt: "2025-08-15T18:00:00.000Z"
-    }
-  },
-  {
-    id: "v-6",
-    name: "Timothy Finch",
-    dob: "2000-05-18",
-    privilege: "Publisher",
-    congregation: "Valley View",
-    circuit: "FL-10-A",
-    lastConventionDate: "2025-08-15",
-    assignmentHeld: "Media & Audio Visual",
-    recommendedForCommitteeAssistant: false,
-    phone: "407-555-0221",
-    email: "timmyfinch@outlook.com",
-    jwpubEmail: "",
-    address: "711 Oak Arbor Court, Altamonte Springs, FL 32714",
-    evaluation: {
-      grade: "C",
-      comments: "Timothy Finch was evaluated: Timmy is technically competent, but had minor issues with prompt camera adjustments. Needs a bit more concentration during long sessions.",
-      recommendation: "Keep in current assignment",
-      evaluatedAt: "2025-08-15T16:45:00.000Z"
-    }
-  }
-];
+const INITIAL_VOLUNTEERS: Volunteer[] = [];
 
 // Default Conventions Seed
-const DEFAULT_CONVENTIONS: Convention[] = [
-  { id: "conv-orlando-2026", name: "Orlando Regional 2026", username: "orlando2026", password: "password123" },
-  { id: "conv-miami-2026", name: "Miami Regional 2026", username: "miami2026", password: "password123" }
-];
+const DEFAULT_CONVENTIONS: Convention[] = [];
 
 // ==========================================
 // UTILITY FUNCTIONS
@@ -1109,10 +979,7 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
                   </div>
                 </div>
 
-                <div className={`p-3 rounded-xl text-xxs flex gap-2 items-start ${theme === 'dark' ? 'bg-slate-950/60 text-slate-400' : 'bg-slate-50 text-slate-600'}`}>
-                  <Info className="w-4 h-4 text-indigo-400 shrink-0" />
-                  <span>Seed logins: Use username <strong>orlando2026</strong> or <strong>miami2026</strong> with password <strong>password123</strong> to load pre-seeded datasets.</span>
-                </div>
+
 
                 <button 
                   type="submit"
