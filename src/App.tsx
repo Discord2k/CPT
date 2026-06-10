@@ -3,7 +3,7 @@ import {
   Search, Plus, Edit2, Trash2, Moon, Sun, Check, X, 
   Upload, Download, Users, Award, 
   ShieldAlert, Sparkles, Filter, Database, AlertCircle, RefreshCw,
-  Sliders, Phone, Mail, Globe, MapPin, FileUp, Lock, User, LogOut
+  Sliders, Phone, Mail, Globe, MapPin, FileUp, Lock, User, LogOut, Info
 } from 'lucide-react';
 
 // ==========================================
@@ -204,6 +204,7 @@ export default function App() {
 
   // Mobile drawer states
   const [isMobileCongListOpen, setIsMobileCongListOpen] = useState<boolean>(false);
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState<boolean>(false);
 
   // PWA Install Prompt State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -1163,10 +1164,42 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
             <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">Active Convention Sessions</h3>
             
             {conventions.length === 0 ? (
-              <div className="text-center py-10 border border-dashed rounded-xl border-slate-800/80 mb-6 bg-slate-950/20">
-                <AlertCircle className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-                <p className="text-sm font-semibold text-slate-400">No conventions registered yet</p>
-                <p className="text-xs text-slate-500 mt-1">Please import a congregation roster file below to register your first convention session.</p>
+              <div className="space-y-6 mb-6">
+                <div className="text-center py-8 border border-dashed rounded-2xl dark:border-slate-800 border-slate-200 bg-slate-950/10">
+                  <AlertCircle className="w-10 h-10 text-indigo-400 mx-auto mb-3 animate-pulse" />
+                  <p className="text-sm font-semibold text-slate-350 dark:text-slate-350">No active conventions configured</p>
+                  <p className="text-xs text-slate-500 mt-1">Configure your first session using the quick start guide below.</p>
+                </div>
+
+                <div className={`p-5 rounded-2xl border ${theme === 'dark' ? 'bg-slate-950/40 border-slate-850' : 'bg-slate-50 border-slate-200'}`}>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-400 mb-4 flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4" />
+                    CPT Quick Start Onboarding Guide
+                  </h4>
+                  <div className="space-y-4 text-xs">
+                    <div className="flex gap-3">
+                      <span className="w-6 h-6 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center shrink-0 font-bold">1</span>
+                      <div>
+                        <strong className="block text-slate-300 dark:text-slate-200 font-semibold text-sm">Step 1: Setup a Convention</strong>
+                        <span className="text-slate-500 dark:text-slate-400 block mt-0.5">Click the purple <strong>Import & Configure New Convention</strong> button below. Enter the Place, Date, Language, and upload a spreadsheet, PDF, or Word document containing your congregation roster and coordinator details. This creates your active session.</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <span className="w-6 h-6 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center shrink-0 font-bold">2</span>
+                      <div>
+                        <strong className="block text-slate-300 dark:text-slate-200 font-semibold text-sm">Step 2: Load Your Volunteers</strong>
+                        <span className="text-slate-500 dark:text-slate-400 block mt-0.5">After entering your session, open the <strong>AI Import File / Roster</strong> deck in the dashboard to import volunteers by dragging in files (Word docs, PDFs, spreadsheets) or pasting WhatsApp rosters. Gemini parses details instantly.</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <span className="w-6 h-6 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center shrink-0 font-bold">3</span>
+                      <div>
+                        <strong className="block text-slate-300 dark:text-slate-200 font-semibold text-sm">Step 3: Evaluate & Edit records</strong>
+                        <span className="text-slate-500 dark:text-slate-400 block mt-0.5">Tap the <strong>Evaluate</strong> button next to any volunteer row to log performance grades (A-D) and remarks. Click the pencil icon to modify contact details and physical addresses.</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 max-h-80 overflow-y-auto pr-1">
@@ -1528,6 +1561,15 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
                 <input type="file" accept=".json" onChange={importDatabaseFile} className="hidden" />
               </label>
             </div>
+
+            {/* Help Quick Start Guide */}
+            <button 
+              onClick={() => setIsHelpModalOpen(true)}
+              title="Quick Start Tutorial"
+              className={`p-2.5 rounded-xl border transition-all duration-200 ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-indigo-400 hover:bg-slate-700' : 'bg-slate-100 border-slate-200 text-indigo-600 hover:bg-slate-200'}`}
+            >
+              <Info className="w-4.5 h-4.5" />
+            </button>
 
             {/* Dark/Light Toggle */}
             <button 
@@ -2818,6 +2860,79 @@ Brother Jonathan Mercer, Elder at Oakwood Pines, 407-555-0143, email: j.mercer@g
                 className="text-xs font-bold px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20"
               >
                 Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
+          CPT USER GUIDE & ONBOARDING TUTOR MODAL
+          ========================================== */}
+      {isHelpModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className={`w-full max-w-2xl rounded-2xl border p-6 flex flex-col max-h-[90vh] overflow-y-auto ${theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}>
+            <div className="flex justify-between items-center pb-4 border-b dark:border-slate-800 border-slate-200 mb-4">
+              <div className="flex items-center gap-2">
+                <Info className="w-5 h-5 text-indigo-400" />
+                <h3 className="font-bold text-base">CPT Platform Tutorial</h3>
+              </div>
+              <button 
+                onClick={() => setIsHelpModalOpen(false)}
+                className={`p-1.5 rounded-lg border ${theme === 'dark' ? 'border-slate-800 hover:bg-slate-800' : 'border-slate-200 hover:bg-slate-100'}`}
+              >
+                <X className="w-4.5 h-4.5" />
+              </button>
+            </div>
+
+            <div className="space-y-6 text-xs leading-relaxed">
+              <div>
+                <h4 className="text-sm font-bold text-indigo-400 mb-2">1. How to Import and Setup a Convention</h4>
+                <p className="text-slate-500 dark:text-slate-400 mb-2">
+                  When you first register an account and log in, the system starts with no conventions configured.
+                </p>
+                <ul className="list-disc pl-4 space-y-1 text-slate-500 font-semibold">
+                  <li>Click **Import & Configure New Convention** in the selector deck (or the **Import Conv** button in the top menu).</li>
+                  <li>Fill in the metadata fields: Location, Date (e.g. 2026 convention dates), Language (English/Spanish), and Identifier (e.g. Region 5).</li>
+                  <li>Upload your congregations & coordinator roster list file (supports PDF, Excel sheets, or Word documents).</li>
+                  <li>Gemini reads the document structure, configures the congregations sidebar, and seeds coordinator profiles as the first volunteers.</li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-bold text-indigo-400 mb-2">2. How to Ingest Volunteers (AI Importer)</h4>
+                <p className="text-slate-500 dark:text-slate-400 mb-2">
+                  You can add individual profiles manually, but CPT includes a powerful multimodal parser:
+                </p>
+                <ul className="list-disc pl-4 space-y-1 text-slate-500 font-semibold">
+                  <li>Click the **AI Import File / Roster** button in the center dashboard.</li>
+                  <li>Drag and drop schedules, team rosters, Word documents (.docx), spreadsheets, or even images of paper lists into the drop zone.</li>
+                  <li>You can also copy and paste raw unstructured text directly from WhatsApp logs or email records.</li>
+                  <li>Click **Start AI Parse** to let Gemini structure the raw contents into clean staging cards showing phone numbers, emails, addresses, age, and departments.</li>
+                  <li>Review the parsed outputs in the Resolve/Review panel, edit any fields, and click **Commit Import to Database** to save.</li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-bold text-indigo-400 mb-2">3. How to Edit Profiles & Log Evaluations</h4>
+                <p className="text-slate-500 dark:text-slate-400 mb-2">
+                  Once volunteers are committed, you can manage their assignments and evaluate performance:
+                </p>
+                <ul className="list-disc pl-4 space-y-1 text-slate-500 font-semibold">
+                  <li>Click the **Pencil icon** next to a volunteer to open their profile details and edit phone numbers, addresses, or privilege types.</li>
+                  <li>Click **Evaluate** to log performance grades: **Grade A** (Exemplary), **Grade B** (Proficient), **Grade C** (Developing), or **Grade D** (Needs Assistance).</li>
+                  <li>Auto-populated remarks or comments can be refined in the feedback comment box.</li>
+                  <li>Toggle the **Recommended for Committee Assistant** checkbox for volunteers exhibiting exceptional coordinator capabilities.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-4 border-t dark:border-slate-800 border-slate-200 mt-6 shrink-0">
+              <button 
+                onClick={() => setIsHelpModalOpen(false)}
+                className="text-xs font-bold px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20"
+              >
+                Got It, Let's Go
               </button>
             </div>
           </div>
