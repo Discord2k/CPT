@@ -364,39 +364,34 @@ export default function App() {
     localStorage.setItem('convention_list', JSON.stringify(conventions));
   }, [conventions]);
 
-  // Load volunteers specifically isolated for current active logged-in convention
+  // Load volunteers specifically from the shared master database
   useEffect(() => {
-    if (isLoggedIn && currentConvention) {
-      const dbKey = `volunteer_db_${currentConvention.id}`;
+    if (isLoggedIn) {
+      const dbKey = 'volunteer_db_shared';
       const saved = localStorage.getItem(dbKey);
       if (saved) {
         setVolunteers(JSON.parse(saved));
       } else {
-        // Seed first-time conventions with sample data or empty list
-        if (currentConvention.id.includes('orlando') || currentConvention.id.includes('miami')) {
-          setVolunteers(INITIAL_VOLUNTEERS);
-          localStorage.setItem(dbKey, JSON.stringify(INITIAL_VOLUNTEERS));
-        } else {
-          setVolunteers([]);
-          localStorage.setItem(dbKey, JSON.stringify([]));
-        }
+        // Seed first-time session with initial mock data
+        setVolunteers(INITIAL_VOLUNTEERS);
+        localStorage.setItem(dbKey, JSON.stringify(INITIAL_VOLUNTEERS));
       }
     }
-  }, [isLoggedIn, currentConvention]);
+  }, [isLoggedIn]);
 
-  // Sync isolated volunteers database to LocalStorage
+  // Sync volunteers database to shared LocalStorage
   useEffect(() => {
-    if (isLoggedIn && currentConvention) {
-      const dbKey = `volunteer_db_${currentConvention.id}`;
+    if (isLoggedIn) {
+      const dbKey = 'volunteer_db_shared';
       localStorage.setItem(dbKey, JSON.stringify(volunteers));
     }
-  }, [volunteers, isLoggedIn, currentConvention]);
+  }, [volunteers, isLoggedIn]);
 
-  // Load and derive congregations list for active convention session
+  // Load and derive congregations list for active convention session (shared)
   useEffect(() => {
     setSelectedCongregation(null);
-    if (isLoggedIn && currentConvention) {
-      const saved = localStorage.getItem(`congregations_db_${currentConvention.id}`);
+    if (isLoggedIn) {
+      const saved = localStorage.getItem('congregations_db_shared');
       if (saved) {
         setActiveCongregations(JSON.parse(saved));
       } else {
@@ -415,11 +410,12 @@ export default function App() {
           };
         });
         setActiveCongregations(derived);
+        localStorage.setItem('congregations_db_shared', JSON.stringify(derived));
       }
     } else {
       setActiveCongregations([]);
     }
-  }, [currentConvention, volunteers, isLoggedIn]);
+  }, [volunteers, isLoggedIn]);
 
   useEffect(() => {
     localStorage.setItem('app_theme', theme);
@@ -980,8 +976,24 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
       };
 
       setConventions(prev => [...prev, newConvention]);
-      localStorage.setItem(`congregations_db_${newId}`, JSON.stringify(congregationsList));
-      localStorage.setItem(`volunteer_db_${newId}`, JSON.stringify(volunteersList));
+
+      // Merge newly parsed convention coordinators and congregations into the shared master database
+      const savedVols = localStorage.getItem('volunteer_db_shared');
+      const currentVols = savedVols ? JSON.parse(savedVols) : INITIAL_VOLUNTEERS;
+      const savedCongs = localStorage.getItem('congregations_db_shared');
+      const currentCongs = savedCongs ? JSON.parse(savedCongs) : [];
+
+      const uniqueNewVols = volunteersList.filter(nv => !currentVols.some((cv: any) => cv.name.toLowerCase() === nv.name.toLowerCase()));
+      const mergedVols = [...currentVols, ...uniqueNewVols];
+
+      const uniqueNewCongs = congregationsList.filter(nc => !currentCongs.some((cc: any) => cc.name.toLowerCase() === nc.name.toLowerCase()));
+      const mergedCongs = [...currentCongs, ...uniqueNewCongs];
+
+      localStorage.setItem('congregations_db_shared', JSON.stringify(mergedCongs));
+      localStorage.setItem('volunteer_db_shared', JSON.stringify(mergedVols));
+
+      setVolunteers(mergedVols);
+      setActiveCongregations(mergedCongs);
 
       // Auto login to this new convention
       setCurrentConvention(newConvention);
