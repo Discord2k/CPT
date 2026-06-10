@@ -3048,20 +3048,52 @@ Brother Jonathan Mercer, Elder at Oakwood Pines, 407-555-0143, email: j.mercer@g
               </div>
             </div>
 
-            <div className="flex justify-end gap-2.5">
-              <button 
-                onClick={() => setIsAddConventionOpen(false)}
-                className="text-xs font-bold px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-750"
+            <div className="flex justify-between items-center border-t dark:border-slate-800 border-slate-200 pt-4">
+              <button
+                onClick={async () => {
+                  if (!convPlace.trim() || !convDate.trim() || !convLanguage.trim() || !convNumber.trim()) {
+                    showToast("Please complete all convention metadata fields.", "error");
+                    return;
+                  }
+                  const newId = `conv-${Date.now()}`;
+                  const newConvention = {
+                    id: newId,
+                    name: `${convPlace} (${convNumber}) - ${convLanguage}`,
+                    username: `user-${Date.now()}`,
+                    password: 'password123',
+                    place: convPlace,
+                    date: convDate,
+                    language: convLanguage,
+                    number: convNumber
+                  };
+                  
+                  // Setup initial blank mock coordinators list if needed
+                  setConventions(prev => [...prev, newConvention]);
+                  setCurrentConvention(newConvention);
+                  localStorage.setItem('current_convention_id', newId);
+                  
+                  setIsAddConventionOpen(false);
+                  showToast(`Created blank convention "${newConvention.name}"!`, "success");
+                }}
+                className="text-xs font-bold text-indigo-400 hover:underline"
               >
-                Close
+                Skip File & Create Empty
               </button>
-              <button 
-                onClick={handleParseConventionWithGemini}
-                disabled={isConvParsing}
-                className="text-xs font-bold px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 disabled:opacity-50"
-              >
-                {isConvParsing ? 'Parsing...' : 'Import & Build Convention'}
-              </button>
+              <div className="flex gap-2.5">
+                <button 
+                  onClick={() => setIsAddConventionOpen(false)}
+                  className="text-xs font-bold px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-750"
+                >
+                  Close
+                </button>
+                <button 
+                  onClick={handleParseConventionWithGemini}
+                  disabled={isConvParsing}
+                  className="text-xs font-bold px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 disabled:opacity-50"
+                >
+                  {isConvParsing ? 'Parsing...' : 'Import & Build Convention'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
