@@ -1404,6 +1404,14 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
                   setConventions(prev => [...prev, newConvention]);
                   setCurrentConvention(newConvention);
                   localStorage.setItem('current_convention_id', newId);
+                  setIsLoggedIn(true);
+                  sessionStorage.setItem('is_authenticated', 'true');
+                  setConvPlace('');
+                  setConvDate('');
+                  setConvLanguage('Spanish');
+                  setConvNumber('');
+                  setConvFile(null);
+                  setConvFileBase64('');
                   setIsAddConventionOpen(false);
                   showToast(`Created blank convention "${newConvention.name}"!`, "success");
                 }}
@@ -3202,7 +3210,14 @@ Brother Jonathan Mercer, Elder at Oakwood Pines, 407-555-0143, email: j.mercer@g
                   setConventions(prev => [...prev, newConvention]);
                   setCurrentConvention(newConvention);
                   localStorage.setItem('current_convention_id', newId);
-                  
+                  setIsLoggedIn(true);
+                  sessionStorage.setItem('is_authenticated', 'true');
+                  setConvPlace('');
+                  setConvDate('');
+                  setConvLanguage('Spanish');
+                  setConvNumber('');
+                  setConvFile(null);
+                  setConvFileBase64('');
                   setIsAddConventionOpen(false);
                   showToast(`Created blank convention "${newConvention.name}"!`, "success");
                 }}
