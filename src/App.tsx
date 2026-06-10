@@ -960,7 +960,7 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
   // ==========================================
   // AUTHENTICATION LOGIN ROUTER GATE
   // ==========================================
-  if (!isLoggedIn || !currentConvention) {
+  if (!isLoggedIn) {
     return (
       <div className={`min-h-screen flex items-center justify-center font-sans ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
         <div className="absolute top-6 right-6">
