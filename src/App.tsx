@@ -1277,28 +1277,159 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
           </div>
         )}
 
-        {confirmModal && (
-          <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-            <div className={`w-full max-w-md rounded-2xl border p-6 ${theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}>
-              <h3 className="font-bold text-lg mb-2">{confirmModal.title}</h3>
-              <p className="text-xs text-slate-400 leading-relaxed mb-6">{confirmModal.message}</p>
-              <div className="flex justify-end gap-2.5">
-                <button 
-                  onClick={confirmModal.onCancel}
-                  className="text-xs font-bold px-4.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-755 text-slate-300"
+      {isAddConventionOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className={`w-full max-w-lg rounded-2xl border p-6 ${theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}>
+            <div className="flex justify-between items-center pb-4 border-b dark:border-slate-800 border-slate-200 mb-4">
+              <div className="flex items-center gap-2">
+                <Plus className="w-5 h-5 text-indigo-400" />
+                <h3 className="font-bold text-base">Import & Add Convention</h3>
+              </div>
+              <button 
+                onClick={() => setIsAddConventionOpen(false)}
+                className={`p-1.5 rounded-lg border ${theme === 'dark' ? 'border-slate-800 hover:bg-slate-800' : 'border-slate-200 hover:bg-slate-100'}`}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-400 mb-4 leading-relaxed">
+              Upload a congregation roster/coordinator list. Claude will parse all congregations, circuit codes, and coordinator details to construct the convention database.
+            </p>
+
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Place / Location</label>
+                <input 
+                  type="text" 
+                  value={convPlace}
+                  onChange={(e) => setConvPlace(e.target.value)}
+                  placeholder="e.g. Orlando, FL"
+                  className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200'}`}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Convention Date</label>
+                <input 
+                  type="date" 
+                  value={convDate}
+                  onChange={(e) => setConvDate(e.target.value)}
+                  className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200'}`}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Language</label>
+                <select
+                  value={convLanguage}
+                  onChange={(e) => setConvLanguage(e.target.value)}
+                  className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200'}`}
                 >
-                  Cancel
+                  <option value="Spanish">Spanish</option>
+                  <option value="English">English</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Convention Identifier / Number</label>
+                <input 
+                  type="text" 
+                  value={convNumber}
+                  onChange={(e) => setConvNumber(e.target.value)}
+                  placeholder="e.g. CO-01 or Region 5"
+                  className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200'}`}
+                />
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Upload congregations & Coordinators list</label>
+              <div className="relative">
+                <input
+                  type="file"
+                  onChange={handleConvFileChange}
+                  disabled={isConvParsing}
+                  accept=".pdf,.docx,.doc,.xlsx,.xls,.csv"
+                  className="hidden"
+                  id="conv-file-upload-input-selector"
+                />
+                <label
+                  htmlFor="conv-file-upload-input-selector"
+                  className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all hover:bg-slate-800/10 ${
+                    isConvParsing 
+                      ? 'border-indigo-500 bg-indigo-500/5 opacity-70 pointer-events-none' 
+                      : 'border-slate-700 hover:border-indigo-500'
+                  }`}
+                >
+                  {isConvParsing ? (
+                    <div className="flex flex-col items-center gap-3">
+                      <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin" />
+                      <span className="text-xs font-semibold text-indigo-400 font-mono text-center">
+                        {convParseStep}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center text-center">
+                      <div className="bg-indigo-500/10 p-3 rounded-full text-indigo-400 mb-2">
+                        <Upload className="w-6 h-6" />
+                      </div>
+                      <span className="text-sm font-bold">
+                        {convFile ? convFile.name : 'Select congregation roster file'}
+                      </span>
+                      <span className="text-xs text-slate-500 mt-1">
+                        Supports PDF, Word (.docx), or Excel (.xlsx, .csv)
+                      </span>
+                    </div>
+                  )}
+                </label>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center border-t dark:border-slate-800 border-slate-200 pt-4">
+              <button
+                onClick={async () => {
+                  if (!convPlace.trim() || !convDate.trim() || !convLanguage.trim() || !convNumber.trim()) {
+                    showToast("Please complete all convention metadata fields.", "error");
+                    return;
+                  }
+                  const newId = `conv-${Date.now()}`;
+                  const newConvention = {
+                    id: newId,
+                    name: `${convPlace} (${convNumber}) - ${convLanguage}`,
+                    username: `user-${Date.now()}`,
+                    password: 'password123',
+                    place: convPlace,
+                    date: convDate,
+                    language: convLanguage,
+                    number: convNumber
+                  };
+                  setConventions(prev => [...prev, newConvention]);
+                  setCurrentConvention(newConvention);
+                  localStorage.setItem('current_convention_id', newId);
+                  setIsAddConventionOpen(false);
+                  showToast(`Created blank convention "${newConvention.name}"!`, "success");
+                }}
+                className="text-xs font-bold text-indigo-400 hover:underline"
+              >
+                Skip File & Create Empty
+              </button>
+              <div className="flex gap-2.5">
+                <button 
+                  onClick={() => setIsAddConventionOpen(false)}
+                  className="text-xs font-bold px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-750"
+                >
+                  Close
                 </button>
                 <button 
-                  onClick={confirmModal.onConfirm}
-                  className="text-xs font-bold px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-500/20"
+                  onClick={handleParseConventionWithGemini}
+                  disabled={isConvParsing}
+                  className="text-xs font-bold px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 disabled:opacity-50"
                 >
-                  Confirm Action
+                  {isConvParsing ? 'Parsing...' : 'Import & Build Convention'}
                 </button>
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
       </div>
     );
   }
