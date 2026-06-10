@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Search, Plus, Edit2, Trash2, Moon, Sun, Check, X, 
-  Upload, Download, Key, Users, Award, 
+  Upload, Download, Users, Award, 
   ShieldAlert, Sparkles, Filter, Database, AlertCircle, RefreshCw,
   Sliders, Phone, Mail, Globe, MapPin, FileUp, Lock, User, LogOut
 } from 'lucide-react';
@@ -54,8 +54,7 @@ const apiKey = "";
 // ==========================================
 const INITIAL_VOLUNTEERS: Volunteer[] = [];
 
-// Default Conventions Seed
-const DEFAULT_CONVENTIONS: Convention[] = [];
+
 
 // ==========================================
 // UTILITY FUNCTIONS
@@ -94,15 +93,20 @@ export default function App() {
   // ==========================================
   // CONVENTION LIST & AUTHENTICATION STATES
   // ==========================================
+  const [accounts, setAccounts] = useState<any[]>(() => {
+    const saved = localStorage.getItem('user_accounts');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const [conventions, setConventions] = useState<Convention[]>(() => {
     const saved = localStorage.getItem('convention_list');
-    return saved ? JSON.parse(saved) : DEFAULT_CONVENTIONS;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [currentConvention, setCurrentConvention] = useState<Convention | null>(() => {
     const savedId = localStorage.getItem('current_convention_id');
     const savedList = localStorage.getItem('convention_list');
-    const conventionList: Convention[] = savedList ? JSON.parse(savedList) : DEFAULT_CONVENTIONS;
+    const conventionList: Convention[] = savedList ? JSON.parse(savedList) : [];
     return conventionList.find(c => c.id === savedId) || null;
   });
 
@@ -115,8 +119,7 @@ export default function App() {
     password: ''
   });
 
-  const [createConventionForm, setCreateConventionForm] = useState({
-    name: '',
+  const [createAccountForm, setCreateAccountForm] = useState({
     username: '',
     password: '',
     confirmPassword: ''
@@ -233,6 +236,11 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('convention_list', JSON.stringify(conventions));
   }, [conventions]);
+
+  // Save accounts on change
+  useEffect(() => {
+    localStorage.setItem('user_accounts', JSON.stringify(accounts));
+  }, [accounts]);
 
   // Load volunteers specifically from the shared master database
   useEffect(() => {
@@ -414,71 +422,130 @@ export default function App() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Dynamically find the convention tied to this unique username
-    const targetConv = conventions.find(
-      c => c.username.toLowerCase() === authForm.username.trim().toLowerCase()
+    const targetUser = accounts.find(
+      u => u.username.toLowerCase() === authForm.username.trim().toLowerCase()
     );
 
-    if (!targetConv) {
+    if (!targetUser) {
       showToast("Invalid username or password credentials.", "error");
       return;
     }
 
-    if (targetConv.password === authForm.password) {
-      setCurrentConvention(targetConv);
+    if (targetUser.password === authForm.password) {
       setIsLoggedIn(true);
-      localStorage.setItem('current_convention_id', targetConv.id);
       sessionStorage.setItem('is_authenticated', 'true');
-      showToast(`Welcome! Authenticated to "${targetConv.name}".`, "success");
+      showToast("Welcome! Logged in successfully.", "success");
     } else {
       showToast("Invalid username or password credentials.", "error");
     }
   };
 
-  const handleCreateConvention = (e: React.FormEvent) => {
+  const handleCreateAccount = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!createConventionForm.name.trim() || !createConventionForm.username.trim() || !createConventionForm.password) {
+    if (!createAccountForm.username.trim() || !createAccountForm.password) {
       showToast("Please complete all fields.", "error");
       return;
     }
-    if (createConventionForm.password !== createConventionForm.confirmPassword) {
+    if (createAccountForm.password !== createAccountForm.confirmPassword) {
       showToast("Passwords do not match.", "error");
       return;
     }
 
-    const duplicateCheck = conventions.find(
-      c => c.username.toLowerCase() === createConventionForm.username.trim().toLowerCase()
+    const duplicateCheck = accounts.find(
+      u => u.username.toLowerCase() === createAccountForm.username.trim().toLowerCase()
     );
     if (duplicateCheck) {
-      showToast("A user registry with this username already exists.", "error");
+      showToast("An account with this username already exists.", "error");
       return;
     }
 
-    const newId = `conv-${Date.now()}`;
-    const newConvention = {
-      id: newId,
-      name: createConventionForm.name.trim(),
-      username: createConventionForm.username.trim(),
-      password: createConventionForm.password
+    const newAccount = {
+      username: createAccountForm.username.trim(),
+      password: createAccountForm.password
     };
 
-    setConventions(prev => [...prev, newConvention]);
+    setAccounts(prev => [...prev, newAccount]);
     setActiveLoginTab('login');
-    setAuthForm({ username: newConvention.username, password: '' });
-    setCreateConventionForm({ name: '', username: '', password: '', confirmPassword: '' });
-    showToast(`Convention "${newConvention.name}" created! Log in with username "${newConvention.username}"`, "success");
+    setAuthForm({ username: newAccount.username, password: '' });
+    setCreateAccountForm({ username: '', password: '', confirmPassword: '' });
+    showToast(`Account for "${newAccount.username}" created successfully! Please log in.`, "success");
   };
 
   const handleLogout = () => {
     triggerConfirm(
-      "Switch Convention / Log Out",
-      "This will end your current convention database session and lock the master screen. Are you sure?",
+      "Log Out",
+      "This will end your current user session. Are you sure?",
       () => {
         setIsLoggedIn(false);
         setCurrentConvention(null);
         localStorage.removeItem('current_convention_id');
         sessionStorage.removeItem('is_authenticated');
         showToast("Logged out of administrative session.", "success");
+      }
+    );
+  };
+
+  const handleSwitchConvention = () => {
+    setCurrentConvention(null);
+    localStorage.removeItem('current_convention_id');
+    showToast("Convention registry unlocked. Select another setup.", "info");
+  };
+
+  const handleClearVolunteers = () => {
+    triggerConfirm(
+      "Wipe Volunteers Database",
+      "Are you sure you want to permanently delete ALL volunteer logs from this system? This is irreversible.",
+      () => {
+        setVolunteers([]);
+        localStorage.removeItem('volunteer_db_shared');
+        showToast("All volunteer records wiped.", "success");
+      }
+    );
+  };
+
+  const handleClearCongregations = () => {
+    triggerConfirm(
+      "Wipe Congregations List",
+      "Are you sure you want to permanently clear the congregations configuration? Roster lists will need to be re-imported.",
+      () => {
+        setActiveCongregations([]);
+        localStorage.removeItem('congregations_db_shared');
+        showToast("All congregation configuration records wiped.", "success");
+      }
+    );
+  };
+
+  const handleDeleteCurrentConvention = () => {
+    if (!currentConvention) return;
+    triggerConfirm(
+      "Delete Current Convention",
+      `Are you sure you want to delete "${currentConvention.name}"? This removes the convention config, but keeps volunteer records intact.`,
+      () => {
+        const targetId = currentConvention.id;
+        setConventions(prev => prev.filter(c => c.id !== targetId));
+        setCurrentConvention(null);
+        localStorage.removeItem('current_convention_id');
+        setIsApiKeyModalOpen(false);
+        showToast("Current convention database session deleted.", "success");
+      }
+    );
+  };
+
+  const handleWipeAllData = () => {
+    triggerConfirm(
+      "FACTORY RESET - WIPE ALL DATA",
+      "This will permanently delete all volunteers, congregations, conventions, and user accounts on this device. You will be logged out. Are you sure?",
+      () => {
+        localStorage.clear();
+        sessionStorage.clear();
+        setVolunteers([]);
+        setActiveCongregations([]);
+        setConventions([]);
+        setAccounts([]);
+        setCurrentConvention(null);
+        setIsLoggedIn(false);
+        setIsApiKeyModalOpen(false);
+        showToast("System factory reset completed.", "success");
       }
     );
   };
@@ -938,7 +1005,7 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
                   : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-300'
                 }`}
               >
-                New Convention
+                Register Account
               </button>
             </div>
 
@@ -946,7 +1013,7 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
             {activeLoginTab === 'login' && (
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold tracking-wider uppercase text-slate-400 mb-1.5">Admin Username</label>
+                  <label className="block text-xs font-bold tracking-wider uppercase text-slate-400 mb-1.5">Username</label>
                   <div className="relative">
                     <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input 
@@ -954,7 +1021,7 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
                       required
                       value={authForm.username}
                       onChange={(e) => setAuthForm({ ...authForm, username: e.target.value })}
-                      placeholder="e.g. orlando2026"
+                      placeholder="Admin username"
                       className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
                         theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200'
                       }`}
@@ -963,7 +1030,7 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold tracking-wider uppercase text-slate-400 mb-1.5">Admin Password</label>
+                  <label className="block text-xs font-bold tracking-wider uppercase text-slate-400 mb-1.5">Password</label>
                   <div className="relative">
                     <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input 
@@ -979,8 +1046,6 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
                   </div>
                 </div>
 
-
-
                 <button 
                   type="submit"
                   className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-bold transition-all shadow-lg shadow-indigo-500/20"
@@ -990,31 +1055,17 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
               </form>
             )}
 
-            {/* TAB 2: CREATE CONVENTION FORM */}
+            {/* TAB 2: CREATE ACCOUNT FORM */}
             {activeLoginTab === 'create' && (
-              <form onSubmit={handleCreateConvention} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold tracking-wider uppercase text-slate-400 mb-1.5">Convention / congregation Name</label>
-                  <input 
-                    type="text"
-                    required
-                    value={createConventionForm.name}
-                    onChange={(e) => setCreateConventionForm({ ...createConventionForm, name: e.target.value })}
-                    placeholder="e.g., Orlando Regional 2026"
-                    className={`w-full px-3.5 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                      theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200'
-                    }`}
-                  />
-                </div>
-
+              <form onSubmit={handleCreateAccount} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold tracking-wider uppercase text-slate-400 mb-1.5">Set Admin Username</label>
                   <input 
                     type="text"
                     required
-                    value={createConventionForm.username}
-                    onChange={(e) => setCreateConventionForm({ ...createConventionForm, username: e.target.value })}
-                    placeholder="Set login username"
+                    value={createAccountForm.username}
+                    onChange={(e) => setCreateAccountForm({ ...createAccountForm, username: e.target.value })}
+                    placeholder="Choose username"
                     className={`w-full px-3.5 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
                       theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200'
                     }`}
@@ -1026,8 +1077,8 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
                   <input 
                     type="password"
                     required
-                    value={createConventionForm.password}
-                    onChange={(e) => setCreateConventionForm({ ...createConventionForm, password: e.target.value })}
+                    value={createAccountForm.password}
+                    onChange={(e) => setCreateAccountForm({ ...createAccountForm, password: e.target.value })}
                     placeholder="Password"
                     className={`w-full px-3.5 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
                       theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200'
@@ -1040,8 +1091,8 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
                   <input 
                     type="password"
                     required
-                    value={createConventionForm.confirmPassword}
-                    onChange={(e) => setCreateConventionForm({ ...createConventionForm, confirmPassword: e.target.value })}
+                    value={createAccountForm.confirmPassword}
+                    onChange={(e) => setCreateAccountForm({ ...createAccountForm, confirmPassword: e.target.value })}
                     placeholder="Repeat password"
                     className={`w-full px-3.5 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
                       theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200'
@@ -1053,13 +1104,132 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
                   type="submit"
                   className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold transition-all shadow-lg shadow-emerald-500/20"
                 >
-                  Create Convention Registry
+                  Create Account
                 </button>
               </form>
             )}
           </div>
         </div>
         
+        {/* System Notification Toast */}
+        {toast && (
+          <div className="fixed bottom-6 right-6 z-50 animate-slideUp">
+            <div className={`flex items-center gap-2.5 px-4.5 py-3 rounded-xl border shadow-xl ${
+              toast.type === 'success' 
+              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' 
+              : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+            }`}>
+              {toast.type === 'success' ? <Check className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+              <span className="text-xs font-semibold">{toast.message}</span>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ==========================================
+  // CONVENTION SELECTOR GATE (POST-LOGIN)
+  // ==========================================
+  if (!currentConvention) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center font-sans p-4 ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
+        <div className="absolute top-6 right-6 flex items-center gap-3">
+          <button 
+            onClick={toggleTheme}
+            className={`p-2.5 rounded-xl border transition-all duration-200 ${theme === 'dark' ? 'bg-slate-900 border-slate-800 text-indigo-400 hover:bg-slate-800' : 'bg-white border-slate-200 text-amber-500 hover:bg-slate-100'}`}
+          >
+            {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          </button>
+          <button 
+            onClick={handleLogout}
+            className={`p-2.5 rounded-xl border transition-all duration-200 ${theme === 'dark' ? 'bg-slate-900 border-slate-800 text-rose-400 hover:bg-slate-800' : 'bg-white border-slate-200 text-rose-600 hover:bg-slate-100'}`}
+            title="Log Out"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="w-full max-w-2xl p-6 sm:p-8">
+          <div className="text-center mb-8">
+            <div className="inline-flex bg-gradient-to-br from-indigo-500 to-violet-600 p-4 rounded-2xl text-white shadow-xl shadow-indigo-500/20 mb-4">
+              <Database className="w-8 h-8" />
+            </div>
+            <h2 className="text-2xl font-extrabold tracking-tight">Convention Selector</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">Select an active convention database or configure a new registry setup.</p>
+          </div>
+
+          <div className={`rounded-2xl border p-6 shadow-2xl transition-all duration-300 ${theme === 'dark' ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">Active Convention Sessions</h3>
+            
+            {conventions.length === 0 ? (
+              <div className="text-center py-10 border border-dashed rounded-xl border-slate-800/80 mb-6 bg-slate-950/20">
+                <AlertCircle className="w-10 h-10 text-slate-600 mx-auto mb-3" />
+                <p className="text-sm font-semibold text-slate-400">No conventions registered yet</p>
+                <p className="text-xs text-slate-500 mt-1">Please import a congregation roster file below to register your first convention session.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 max-h-80 overflow-y-auto pr-1">
+                {conventions.map(conv => (
+                  <div 
+                    key={conv.id}
+                    className={`p-4 rounded-xl border transition-all flex flex-col justify-between gap-3 ${
+                      theme === 'dark' ? 'bg-slate-950/60 border-slate-850 hover:bg-slate-800/20' : 'bg-slate-50 border-slate-200 hover:bg-slate-100/50'
+                    }`}
+                  >
+                    <div className="flex-1">
+                      <h4 className="font-bold text-sm text-indigo-400 truncate">{conv.name}</h4>
+                      <div className="text-xxs text-slate-500 mt-1 space-y-0.5">
+                        {conv.place && <div>Place: {conv.place}</div>}
+                        {conv.date && <div>Date: {conv.date}</div>}
+                        {conv.language && <div>Language: {conv.language}</div>}
+                        {conv.number && <div>Identifier: {conv.number}</div>}
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => {
+                          setCurrentConvention(conv);
+                          localStorage.setItem('current_convention_id', conv.id);
+                          showToast(`Loaded "${conv.name}" session successfully.`, "success");
+                        }}
+                        className="flex-1 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all text-center"
+                      >
+                        Enter Session
+                      </button>
+                      <button 
+                        onClick={() => {
+                          triggerConfirm(
+                            "Delete Convention",
+                            `Are you sure you want to delete the convention session registry for "${conv.name}"? This does not wipe volunteers, but deletes the convention configuration.`,
+                            () => {
+                              setConventions(prev => prev.filter(c => c.id !== conv.id));
+                              showToast(`Successfully deleted "${conv.name}".`, "success");
+                            }
+                          );
+                        }}
+                        className="p-1.5 rounded-lg border border-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all"
+                        title="Delete Session"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button 
+              onClick={() => setIsAddConventionOpen(true)}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
+            >
+              <Plus className="w-4.5 h-4.5" />
+              <span>Import & Configure New Convention</span>
+            </button>
+          </div>
+        </div>
+
         {/* System Notification Toast */}
         {toast && (
           <div className="fixed bottom-6 right-6 z-50 animate-slideUp">
@@ -1344,10 +1514,19 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
               {theme === 'dark' ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
             </button>
 
+            {/* Switch Convention Setup */}
+            <button 
+              onClick={handleSwitchConvention}
+              title="Switch Convention Registry"
+              className={`p-2.5 rounded-xl border transition-all duration-200 ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-indigo-400 hover:bg-slate-700' : 'bg-slate-100 border-slate-200 text-indigo-600 hover:bg-slate-200'}`}
+            >
+              <Sliders className="w-4.5 h-4.5" />
+            </button>
+
             {/* Logout Gate Switcher */}
             <button 
               onClick={handleLogout}
-              title="Lock & Change Convention"
+              title="Log Out Account"
               className={`p-2.5 rounded-xl border transition-all duration-200 ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-rose-400 hover:bg-slate-700' : 'bg-slate-100 border-slate-200 text-rose-600 hover:bg-slate-200'}`}
             >
               <LogOut className="w-4.5 h-4.5" />
@@ -2513,26 +2692,26 @@ Brother Jonathan Mercer, Elder at Oakwood Pines, 407-555-0143, email: j.mercer@g
           ========================================== */}
       {isApiKeyModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-          <div className={`w-full max-w-md rounded-2xl border p-6 ${theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}>
+          <div className={`w-full max-w-lg rounded-2xl border p-6 flex flex-col max-h-[90vh] overflow-y-auto ${theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}>
             <div className="flex justify-between items-center pb-4 border-b dark:border-slate-800 border-slate-200 mb-4">
               <div className="flex items-center gap-2">
-                <Key className="w-5 h-5 text-indigo-400" />
-                <h3 className="font-bold text-base">Gemini API Setup</h3>
+                <Sliders className="w-5 h-5 text-indigo-400" />
+                <h3 className="font-bold text-base">System Settings & Data Control</h3>
               </div>
               <button 
                 onClick={() => setIsApiKeyModalOpen(false)}
                 className={`p-1.5 rounded-lg border ${theme === 'dark' ? 'border-slate-800 hover:bg-slate-800' : 'border-slate-200 hover:bg-slate-100'}`}
               >
-                <X className="w-4 h-4" />
+                <X className="w-4.5 h-4.5" />
               </button>
             </div>
 
-            <p className="text-xs text-slate-400 mb-4 leading-relaxed">
-              If the default platform authorization is missing or unauthorized, you can paste your personal Gemini Developer Key below. This key is stored securely in your browser's local state.
-            </p>
-
+            {/* Custom API key configure */}
             <div className="space-y-3 mb-6">
-              <label className="block text-xs font-bold tracking-wider uppercase text-slate-400">Custom Gemini API Key</label>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Section 1: Gemini API Key Setup</h4>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                If the default platform authorization is missing or unauthorized, you can paste your personal Gemini Developer Key below.
+              </p>
               <input 
                 type="password" 
                 value={customApiKey}
@@ -2555,17 +2734,63 @@ Brother Jonathan Mercer, Elder at Oakwood Pines, 407-555-0143, email: j.mercer@g
               )}
             </div>
 
-            <div className="flex justify-end gap-2.5">
+            <hr className="dark:border-slate-800 border-slate-200 mb-6" />
+
+            {/* Master Data Delete operations */}
+            <div className="space-y-4 mb-6">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-rose-400">Section 2: Danger Zone & Data Cleanses</h4>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Permanently purge records, configurations, or wipe entire workspaces from your browser state.
+              </p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={handleClearVolunteers}
+                  className="px-4 py-3 rounded-xl border border-rose-500/20 text-rose-400 bg-rose-500/5 hover:bg-rose-500/10 text-xs font-bold text-center transition-all"
+                >
+                  Wipe Volunteers Database
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleClearCongregations}
+                  className="px-4 py-3 rounded-xl border border-rose-500/20 text-rose-400 bg-rose-500/5 hover:bg-rose-500/10 text-xs font-bold text-center transition-all"
+                >
+                  Wipe Congregations list
+                </button>
+
+                {currentConvention && (
+                  <button
+                    type="button"
+                    onClick={handleDeleteCurrentConvention}
+                    className="px-4 py-3 rounded-xl border border-rose-500/20 text-rose-450 bg-rose-500/5 hover:bg-rose-500/10 text-xs font-bold text-center transition-all"
+                  >
+                    Delete Current Convention
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleWipeAllData}
+                  className="px-4 py-3 rounded-xl border border-red-650/35 text-red-400 bg-red-500/10 hover:bg-red-500/20 text-xs font-bold text-center transition-all"
+                >
+                  Factory Reset (Wipe Everything)
+                </button>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2.5 pt-4 border-t dark:border-slate-800 border-slate-200 shrink-0">
               <button 
                 onClick={() => setIsApiKeyModalOpen(false)}
-                className="text-xs font-bold px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-750"
+                className="text-xs font-bold px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-755 text-slate-300"
               >
-                Close
+                Cancel
               </button>
               <button 
                 onClick={() => {
                   setIsApiKeyModalOpen(false);
-                  showToast("Secure configuration updated.", "success");
+                  showToast("Configuration profiles updated.", "success");
                 }}
                 className="text-xs font-bold px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20"
               >
