@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSession } from '../contexts/SessionContext';
-import { Compass, Database, AlertCircle, WifiOff, Lock, User, Info, Sun, Moon } from 'lucide-react';
+import { Database, AlertCircle, WifiOff, Lock, User, Sun, Moon } from 'lucide-react';
 
 export const SessionGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { 

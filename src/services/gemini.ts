@@ -8,6 +8,7 @@ export type ExtractedVolunteer = {
   privilege: string;
   congregationName: string;
   congregationNumber: string;
+  circuit: string;
   lastConventionDate: string;
   assignmentHeld: string;
   recommendedForCommitteeAssistant: boolean;
@@ -54,6 +55,7 @@ export const extractVolunteersFromDoc = async (
       - privilege (String, must strictly map to one of: "Elder", "Ministerial Servant", "Pioneer", "Publisher". Map "MS", "Servant" to "Ministerial Servant")
       - congregationName (String, the name of their congregation)
       - congregationNumber (String, the congregation ID/number if specified, otherwise empty string)
+      - circuit (String, the circuit or circuito ID, search explicitly for formats like fl-**-** or **-** where * is a digit or letter. Set to empty string if not found)
       - lastConventionDate (String in YYYY-MM-DD format, fallback to current year or 2025/2026 if unspecified)
       - assignmentHeld (String, e.g. "Attendants", "First Aid", "Food Service", "Cleaning & Maintenance", "Media & Audio Visual")
       - recommendedForCommitteeAssistant (Boolean, look for notes implying recommendation, outstanding attitude, potential, or leadership capability)
@@ -63,7 +65,7 @@ export const extractVolunteersFromDoc = async (
       - address (String, full physical address if found, e.g. street, city, state, zip)
       - evaluation (Object) containing:
         - grade (String, must strictly map to one of: "A", "B", "C", "D". If they have a rating like A+, A-, map to A, etc.)
-        - comments (String, description or comments about the volunteer)
+        - comments (String, description, performance notes, remarks, comments, or comentarios about the volunteer. Auto-populate from any notes or feedback found in the document)
         - recommendation (String, e.g., "Recommend for advancement", "Keep in current assignment", "Needs adjustment")
         - evaluatedAt (String in ISO format if dates are specified, otherwise leave null)
 
@@ -132,6 +134,7 @@ const normalizeExtractedVolunteers = (rawList: any[]): ExtractedVolunteer[] => {
 
     const congregationName = getVal(['congregationName', 'congregation_name', 'congregation', 'congregacion']) || 'Unassigned';
     const congregationNumber = String(getVal(['congregationNumber', 'congregation_number', 'number', 'numero', 'cong_number']) || '');
+    const circuit = getVal(['circuit', 'circuito']) || '';
     const lastConventionDate = getVal(['lastConventionDate', 'last_convention_date', 'lastConvention']) || new Date().toISOString().split('T')[0];
     const assignmentHeld = getVal(['assignmentHeld', 'assignment_held', 'assignment', 'department', 'departamento', 'asignacion']) || 'General Volunteer';
     const recommendedForCommitteeAssistant = !!getVal(['recommendedForCommitteeAssistant', 'recommended_for_committee_assistant', 'committeeAssistant', 'is_committee_assistant']);
@@ -179,6 +182,7 @@ const normalizeExtractedVolunteers = (rawList: any[]): ExtractedVolunteer[] => {
       privilege,
       congregationName,
       congregationNumber,
+      circuit,
       lastConventionDate,
       assignmentHeld,
       recommendedForCommitteeAssistant,
@@ -209,6 +213,7 @@ const getMockExtractedData = (fileName: string): ExtractedVolunteer[] => {
         privilege: "Pioneer",
         congregationName: "Oak Ridge",
         congregationNumber: "10552",
+        circuit: "FL-10-A",
         lastConventionDate: "2025-08-15",
         assignmentHeld: "Media & Audio Visual",
         recommendedForCommitteeAssistant: true,
@@ -230,6 +235,7 @@ const getMockExtractedData = (fileName: string): ExtractedVolunteer[] => {
         privilege: "Ministerial Servant",
         congregationName: "Oak Ridge",
         congregationNumber: "10552",
+        circuit: "FL-10-A",
         lastConventionDate: "2025-08-15",
         assignmentHeld: "Attendants",
         recommendedForCommitteeAssistant: false,
@@ -255,6 +261,7 @@ const getMockExtractedData = (fileName: string): ExtractedVolunteer[] => {
       privilege: "Elder",
       congregationName: "Dean Road Spanish",
       congregationNumber: "25000",
+      circuit: "FL-05-C",
       lastConventionDate: "2025-08-15",
       assignmentHeld: "Attendants",
       recommendedForCommitteeAssistant: true,
@@ -276,6 +283,7 @@ const getMockExtractedData = (fileName: string): ExtractedVolunteer[] => {
       privilege: "Publisher",
       congregationName: "Oakwood Pines",
       congregationNumber: "12304",
+      circuit: "FL-12-B",
       lastConventionDate: "2025-08-15",
       assignmentHeld: "Cleaning & Maintenance",
       recommendedForCommitteeAssistant: false,
@@ -377,5 +385,164 @@ const getMockCongregations = (): ExtractedCongregation[] => {
     { name: "Lake Helen Spanish", number: "15000" },
     { name: "Dean Road Spanish", number: "25000" },
     { name: "Oak Ridge", number: "10552" }
+  ];
+};
+
+export type ExtractedConventionRow = {
+  congregationName: string;
+  congregationNumber: string;
+  circuit: string;
+  coordinatorFirstName: string;
+  coordinatorLastName: string;
+  coordinatorPhone: string;
+  coordinatorEmail: string;
+  coordinatorJwpubEmail: string;
+}
+
+export const extractConventionDetailsFromDoc = async (
+  file: File,
+  fileBase64: string,
+  excelText?: string
+): Promise<ExtractedConventionRow[]> => {
+  const geminiKey = HARDCODED_GEMINI_API_KEY || 
+                    import.meta.env.VITE_GEMINI_API_KEY || 
+                    localStorage.getItem('ATLAS_GEMINI_KEY');
+
+  if (!geminiKey) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(getMockConventionDetails());
+      }, 1500);
+    });
+  }
+
+  try {
+    const ai = new GoogleGenerativeAI(geminiKey);
+    const model = ai.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+    let prompt = `
+      You are an expert document data parser. Analyze the provided congregation roster directory or coordinator spreadsheet describing regional congregations.
+      Extract each row describing a congregation and its coordinator details into a valid JSON array of objects. Map and find fields strictly matching:
+      - congregationName (String, full name of the congregation, e.g. "Central Park Spanish", "Spanish - Deland")
+      - congregationNumber (String, congregation number, e.g. "94631" or "118786")
+      - circuit (String, circuit ID, e.g. "FL-25-A" or "FL-15-B" matching circuit formats)
+      - coordinatorFirstName (String, coordinator's first name / Nombre, e.g. "Jaime", "Julio")
+      - coordinatorLastName (String, coordinator's last name / Apellidos, e.g. "Soto", "Bonilla")
+      - coordinatorPhone (String, cell phone / Celular, e.g., "321-278-9949")
+      - coordinatorEmail (String, standard email address / Correo electrónico)
+      - coordinatorJwpubEmail (String, congregation email / Correo electrónico Cong., e.g., "CONG00194631@jwpub.org")
+
+      If any Spanish terms are present in headers, translate or map them properly:
+      - "Congregacion" -> congregationName
+      - "Num de Cong" -> congregationNumber
+      - "Circuito" -> circuit
+      - "Nombre" -> coordinatorFirstName
+      - "Apellidos" -> coordinatorLastName
+      - "Celular" -> coordinatorPhone
+      - "Correo electrónico" -> coordinatorEmail
+      - "Correo electrónico Cong." -> coordinatorJwpubEmail
+
+      Only output a raw JSON array of objects. Do not wrap the JSON output inside Markdown brackets or add prefix/suffix comments. Use valid double-quoted JSON formats.
+    `;
+
+    let response;
+    if (excelText) {
+      prompt += `\nHere is the text extracted from the spreadsheet/document:\n${excelText}`;
+      response = await model.generateContent([prompt]);
+    } else {
+      response = await model.generateContent([
+        {
+          inlineData: {
+            data: fileBase64.split(',')[1] || fileBase64,
+            mimeType: file.type || 'application/pdf'
+          }
+        },
+        prompt
+      ]);
+    }
+
+    const responseText = response.response.text().trim();
+    const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+    const parsed = JSON.parse(cleanJson);
+    return normalizeExtractedConventionDetails(Array.isArray(parsed) ? parsed : [parsed]);
+  } catch (error) {
+    console.error('Gemini API convention detail extraction failed:', error);
+    throw new Error('Gemini API convention detail extraction failed. Please check your API key or document format.');
+  }
+};
+
+const normalizeExtractedConventionDetails = (rawList: any[]): ExtractedConventionRow[] => {
+  return rawList.map(item => {
+    const getVal = (keys: string[]) => {
+      for (const k of keys) {
+        if (item[k] !== undefined && item[k] !== null) return item[k];
+      }
+      return undefined;
+    };
+
+    const congregationName = getVal(['congregationName', 'congregation_name', 'congregacion', 'congregation']) || 'Unknown Congregation';
+    const congregationNumber = String(getVal(['congregationNumber', 'congregation_number', 'number', 'numero', 'num_de_cong', 'cong_number']) || '');
+    const circuit = getVal(['circuit', 'circuito']) || '';
+    const coordinatorFirstName = getVal(['coordinatorFirstName', 'first_name', 'nombre']) || 'Unknown';
+    const coordinatorLastName = getVal(['coordinatorLastName', 'last_name', 'apellidos']) || '';
+    const coordinatorPhone = getVal(['coordinatorPhone', 'phone', 'celular', 'telefono']) || '';
+    const coordinatorEmail = getVal(['coordinatorEmail', 'email', 'correo']) || '';
+    const coordinatorJwpubEmail = getVal(['coordinatorJwpubEmail', 'jwpub_email', 'correo_cong']) || '';
+
+    return {
+      congregationName,
+      congregationNumber,
+      circuit,
+      coordinatorFirstName,
+      coordinatorLastName,
+      coordinatorPhone,
+      coordinatorEmail,
+      coordinatorJwpubEmail
+    };
+  });
+};
+
+const getMockConventionDetails = (): ExtractedConventionRow[] => {
+  return [
+    {
+      congregationName: "Central Park Spanish",
+      congregationNumber: "94631",
+      circuit: "FL-25-A",
+      coordinatorFirstName: "Jaime",
+      coordinatorLastName: "Soto",
+      coordinatorPhone: "321-278-9949",
+      coordinatorEmail: "JaimeSSoto10@jwpub.org",
+      coordinatorJwpubEmail: "CONG00194631@jwpub.org"
+    },
+    {
+      congregationName: "Sun Vista Spanish",
+      congregationNumber: "118786",
+      circuit: "FL-25-B",
+      coordinatorFirstName: "Julio",
+      coordinatorLastName: "Bonilla",
+      coordinatorPhone: "(321) 947-8299",
+      coordinatorEmail: "JulioBonilla@jwpub.org",
+      coordinatorJwpubEmail: "CONG00118786@jwpub.org"
+    },
+    {
+      congregationName: "Spanish - Port Saint John FL",
+      congregationNumber: "918854",
+      circuit: "FL-25-A",
+      coordinatorFirstName: "Randy",
+      coordinatorLastName: "Acosta",
+      coordinatorPhone: "321-298-7036",
+      coordinatorEmail: "RAcosta@jwpub.org",
+      coordinatorJwpubEmail: "CONG001918854@jwpub.org"
+    },
+    {
+      congregationName: "Collins Spanish",
+      congregationNumber: "945105",
+      circuit: "FL-49-A",
+      coordinatorFirstName: "Fernando",
+      coordinatorLastName: "Carrasquillo",
+      coordinatorPhone: "904-413-0087",
+      coordinatorEmail: "FERNANDOC19@jwpub.org",
+      coordinatorJwpubEmail: "CONG001945105@jwpub.org"
+    }
   ];
 };
