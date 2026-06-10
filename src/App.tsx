@@ -1243,6 +1243,29 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
             </div>
           </div>
         )}
+
+        {confirmModal && (
+          <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+            <div className={`w-full max-w-md rounded-2xl border p-6 ${theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}>
+              <h3 className="font-bold text-lg mb-2">{confirmModal.title}</h3>
+              <p className="text-xs text-slate-400 leading-relaxed mb-6">{confirmModal.message}</p>
+              <div className="flex justify-end gap-2.5">
+                <button 
+                  onClick={confirmModal.onCancel}
+                  className="text-xs font-bold px-4.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-755 text-slate-300"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={confirmModal.onConfirm}
+                  className="text-xs font-bold px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-500/20"
+                >
+                  Confirm Action
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
