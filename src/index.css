@@ -1,0 +1,86 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-cream-50: #FEFDFB;
+  --color-cream-100: #FDFBF7;
+  --color-cream-200: #F7F3E9;
+  --color-cream-300: #EEE5D3;
+  --color-cream-400: #DEC9A3;
+  --color-cream-500: #C8AA74;
+
+  --color-forest-50: #EAF0EC;
+  --color-forest-100: #D5E2D9;
+  --color-forest-200: #ADC4B4;
+  --color-forest-300: #86A790;
+  --color-forest-400: #5F896B;
+  --color-forest-500: #386B47;
+  --color-forest-600: #1B4332;
+  --color-forest-700: #153326;
+  --color-forest-800: #0E2219;
+  --color-forest-900: #07110C;
+
+  --color-sand-50: #FCFBF9;
+  --color-sand-100: #F9F7F3;
+  --color-sand-200: #F3EFE9;
+  --color-sand-300: #EBE5DA;
+  --color-sand-400: #D8CEBF;
+  --color-sand-500: #BFB09D;
+  --color-sand-600: #9B8973;
+  --color-sand-700: #7B6C5A;
+  --color-sand-800: #5C5043;
+  --color-sand-900: #3D352C;
+
+  --font-mono: "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
+  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-cream-100 text-sand-900 font-sans antialiased selection:bg-forest-100 selection:text-forest-800 min-h-screen;
+    background-color: #FDFBF7;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-sans font-semibold text-forest-800 tracking-tight;
+  }
+
+  /* Monospaced look for tables & technical metrics */
+  .table-data {
+    @apply font-mono text-sm tracking-tight;
+  }
+}
+
+/* Custom premium scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F7F3E9;
+}
+::-webkit-scrollbar-thumb {
+  background: #DEC9A3;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #1B4332;
+}
+
+/* Subtle micro-animations and cards */
+.atlas-card {
+  @apply bg-sand-50 border border-sand-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200;
+}
+
+.atlas-input {
+  @apply bg-sand-50 border border-sand-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-forest-600 focus:border-forest-600 font-mono transition-all;
+}
+
+.btn-primary {
+  @apply bg-forest-600 hover:bg-forest-700 text-cream-50 px-4 py-2 rounded text-sm font-semibold shadow-sm hover:shadow active:translate-y-px transition-all inline-flex items-center gap-2 cursor-pointer;
+}
+
+.btn-secondary {
+  @apply bg-sand-100 hover:bg-sand-200 text-sand-800 border border-sand-300 px-4 py-2 rounded text-sm font-medium transition-all inline-flex items-center gap-2 cursor-pointer;
+}
