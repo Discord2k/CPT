@@ -2019,21 +2019,21 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
               );
             })()}
 
-            <section className={`rounded-2xl border overflow-hidden ${theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
+            <section className={`rounded-2xl border overflow-x-auto ${theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
           
           {/* Desktop Table View */}
           <div className="hidden lg:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className={`border-b text-xs font-bold tracking-wider uppercase ${theme === 'dark' ? 'bg-slate-950/50 border-slate-800 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
-                  <th className="py-4 px-6">Name / Contacts</th>
-                  <th className="py-4 px-4">Age / DOB</th>
-                  <th className="py-4 px-4">Privilege</th>
-                  <th className="py-4 px-4">Congregation / Address</th>
-                  <th className="py-4 px-4">Department / Assignment</th>
-                  <th className="py-4 px-4">Committee Assistant</th>
-                  <th className="py-4 px-4 text-center">Grade Status</th>
-                  <th className="py-4 px-6 text-right">Actions</th>
+                  <th className="py-4 px-4 min-w-[200px]">Name / Contacts</th>
+                  <th className="py-4 px-3 min-w-[100px]">Age / DOB</th>
+                  <th className="py-4 px-3 min-w-[110px]">Privilege</th>
+                  <th className="py-4 px-3 min-w-[180px]">Congregation / Address</th>
+                  <th className="py-4 px-3 min-w-[180px]">Department / Assignment</th>
+                  <th className="py-4 px-3 min-w-[130px]">Committee Assistant</th>
+                  <th className="py-4 px-3 text-center min-w-[140px]">Grade Status</th>
+                  <th className="py-4 px-4 text-right min-w-[180px]">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
@@ -2063,7 +2063,7 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
                         className={`hover:bg-slate-800/20 group transition-colors duration-150 ${isEvaluated ? '' : 'bg-rose-500/5'}`}
                       >
                         {/* Name & Avatar + Contact Overlay */}
-                        <td className="py-4 px-6">
+                        <td className="py-4 px-4">
                           <div className="flex items-start gap-3">
                             <div className={`w-10 h-10 rounded-full font-bold text-xs flex items-center justify-center border-2 shrink-0 mt-1 ${
                               isEvaluated 
@@ -2102,18 +2102,18 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
                         </td>
 
                         {/* Age & DOB */}
-                        <td className="py-4 px-4">
+                        <td className="py-4 px-3">
                           <div className="text-sm font-medium">{age} yrs</div>
                           <span className="text-xxs text-slate-500 font-mono">{v.dob}</span>
                         </td>
 
                         {/* Privilege */}
-                        <td className="py-4 px-4 text-sm font-medium">
+                        <td className="py-4 px-3 text-sm font-medium">
                           {v.privilege}
                         </td>
 
                         {/* Congregation & Physical Address */}
-                        <td className="py-4 px-4">
+                        <td className="py-4 px-3">
                           <div className="text-sm font-medium text-slate-300 dark:text-slate-200 flex items-center gap-1.5">
                             {v.congregation}
                             {v.circuit && (
@@ -2133,12 +2133,12 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
                         </td>
 
                         {/* Assignment */}
-                        <td className="py-4 px-4 text-sm font-semibold text-indigo-400">
+                        <td className="py-4 px-3 text-sm font-semibold text-indigo-400">
                           {v.assignmentHeld}
                         </td>
 
                         {/* Committee Assistant Flag */}
-                        <td className="py-4 px-4">
+                        <td className="py-4 px-3">
                           {v.recommendedForCommitteeAssistant ? (
                             <span className="inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                               <Check className="w-3.5 h-3.5" /> Approved
@@ -2149,7 +2149,7 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
                         </td>
 
                         {/* Grade Status */}
-                        <td className="py-4 px-4 text-center">
+                        <td className="py-4 px-3 text-center">
                           {isEvaluated ? (
                             <div className="inline-flex flex-col items-center">
                               <span className={`text-xs font-bold px-3 py-1 rounded-full ${
@@ -2172,7 +2172,7 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
                         </td>
 
                         {/* Action buttons */}
-                        <td className="py-4 px-6 text-right">
+                        <td className="py-4 px-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <button 
                               onClick={() => setVolunteerModal({ isOpen: true, type: 'evaluate', data: v })}
