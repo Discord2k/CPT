@@ -1,23 +1,45 @@
 {
+  "id": "com.cpt.app",
   "short_name": "CPT",
   "name": "Convention Personnel Tool",
+  "description": "Streamlined dashboard for convention personnel, congregation rosters, and volunteer management.",
+  "categories": ["utilities", "productivity"],
   "icons": [
     {
       "src": "icon-192.png",
       "type": "image/png",
       "sizes": "192x192",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable"
     },
     {
       "src": "icon-512.png",
       "type": "image/png",
       "sizes": "512x512",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
     }
   ],
   "start_url": "/",
-  "background_color": "#FDFBF7",
-  "theme_color": "#1B4332",
+  "background_color": "#020617",
+  "theme_color": "#4f46e5",
   "display": "standalone",
-  "orientation": "portrait"
+  "orientation": "portrait",
+  "shortcuts": [
+    {
+      "name": "Add Volunteer",
+      "url": "/?action=add-volunteer",
+      "description": "Create a new volunteer profile"
+    }
+  ]
 }

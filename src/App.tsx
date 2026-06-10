@@ -329,6 +329,31 @@ export default function App() {
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Mobile drawer states
+  const [isMobileCongListOpen, setIsMobileCongListOpen] = useState<boolean>(false);
+
+  // PWA Install Prompt State
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User response to install prompt: ${outcome}`);
+    setDeferredPrompt(null);
+  };
+
   // Resolve active API key
   const activeApiKey = useMemo(() => {
     return customApiKey || apiKey;
@@ -1381,6 +1406,17 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
           </div>
 
           <div className="flex items-center gap-3">
+            {/* PWA Install Trigger */}
+            {deferredPrompt && (
+              <button 
+                onClick={handleInstallApp}
+                className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-bold transition-all bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-102 active:scale-98 shrink-0 shadow-lg shadow-indigo-500/20"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Install App</span>
+              </button>
+            )}
+
             {/* Connection Badge Indicator / Modal Trigger */}
             <button 
               onClick={() => setIsApiKeyModalOpen(true)}
@@ -1735,9 +1771,9 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
             VOLUNTEER LIST (GRID & TABLE VIEW)
             ========================================== */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start mb-8">
-          {/* Sidebar Panel for Congregations */}
+          {/* Sidebar Panel for Congregations - Desktop Only */}
           {activeCongregations.length > 0 && (
-            <div className={`lg:col-span-1 rounded-2xl border p-4 ${theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
+            <div className={`lg:col-span-1 rounded-2xl border p-4 ${theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'} hidden lg:block`}>
               <div className="flex items-center justify-between pb-3 border-b dark:border-slate-800 border-slate-200 mb-3">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Congregations ({activeCongregations.length})</span>
                 {selectedCongregation && (
@@ -1786,6 +1822,26 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
           {/* Right Column: Volunteers List and Selected Congregation Metadata Card */}
           <div className={`${activeCongregations.length > 0 ? 'lg:col-span-3' : 'lg:col-span-4'} space-y-6`}>
             
+            {/* Mobile Congregation Switcher Trigger */}
+            {activeCongregations.length > 0 && (
+              <div className={`lg:hidden flex items-center justify-between p-4 rounded-2xl border transition-all ${
+                theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
+              }`}>
+                <div>
+                  <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Selected Congregation</span>
+                  <span className="text-sm font-semibold text-indigo-400">
+                    {selectedCongregation ? selectedCongregation : "All Congregations"}
+                  </span>
+                </div>
+                <button 
+                  onClick={() => setIsMobileCongListOpen(true)}
+                  className="text-xs font-bold px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-755 text-white transition-all shadow-md"
+                >
+                  Change Filter
+                </button>
+              </div>
+            )}
+
             {/* Display Selected Congregation Metadata Details */}
             {selectedCongregation && (() => {
               const congDetail = activeCongregations.find(c => c.name === selectedCongregation);
@@ -2024,7 +2080,7 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
           </div>
 
           {/* Mobile Card Grid View */}
-          <div className="block lg:hidden divide-y divide-slate-800">
+          <div className={`block lg:hidden divide-y ${theme === 'dark' ? 'divide-slate-800' : 'divide-slate-200'}`}>
             {filteredVolunteers.length === 0 ? (
               <div className="text-center py-12 px-4">
                 <Database className="w-12 h-12 text-slate-600 mx-auto mb-4" />
@@ -2039,7 +2095,7 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
                     <div className="flex items-start justify-between">
                       <div>
                         <h4 className="font-bold text-base">{v.name}</h4>
-                        <span className="text-xs text-slate-400">{v.congregation}{v.circuit ? ` (${v.circuit})` : ''} — {v.privilege}</span>
+                        <span className="text-xs text-slate-400 dark:text-slate-400">{v.congregation}{v.circuit ? ` (${v.circuit})` : ''} — {v.privilege}</span>
                       </div>
                       
                       {isEvaluated ? (
@@ -2060,27 +2116,29 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
 
                     {/* Contacts block in Mobile Card */}
                     {(v.phone || v.email || v.jwpubEmail || v.address) && (
-                      <div className="p-2.5 rounded-xl bg-slate-950/20 border border-slate-800/50 space-y-1.5 text-xs">
+                      <div className={`p-2.5 rounded-xl border space-y-1.5 text-xs ${
+                        theme === 'dark' ? 'bg-slate-950/20 border-slate-800/50 text-slate-300' : 'bg-slate-100/60 border-slate-200/80 text-slate-650'
+                      }`}>
                         {v.phone && (
-                          <div className="flex items-center gap-2 text-slate-300">
+                          <div className="flex items-center gap-2">
                             <Phone className="w-3.5 h-3.5 text-indigo-400" />
                             <span>{v.phone}</span>
                           </div>
                         )}
                         {v.email && (
-                          <div className="flex items-center gap-2 text-slate-300">
+                          <div className="flex items-center gap-2">
                             <Mail className="w-3.5 h-3.5 text-purple-400" />
                             <span className="truncate">{v.email}</span>
                           </div>
                         )}
                         {v.jwpubEmail && (
-                          <div className="flex items-center gap-2 text-slate-300">
+                          <div className="flex items-center gap-2">
                             <Globe className="w-3.5 h-3.5 text-indigo-400" />
                             <span className="truncate">{v.jwpubEmail}</span>
                           </div>
                         )}
                         {v.address && (
-                          <div className="flex items-start gap-2 text-slate-300">
+                          <div className="flex items-start gap-2">
                             <MapPin className="w-3.5 h-3.5 text-rose-400 mt-0.5" />
                             <span className="leading-tight">{v.address}</span>
                           </div>
@@ -2088,18 +2146,18 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
                       </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-y-1.5 text-xs text-slate-400">
-                      <div><strong className="text-slate-200">Age:</strong> {age} yrs ({v.dob})</div>
-                      <div><strong className="text-slate-200">Assignment:</strong> {v.assignmentHeld}</div>
-                      <div><strong className="text-slate-200">Last worked:</strong> {v.lastConventionDate}</div>
-                      <div><strong className="text-slate-200">Committee Rec:</strong> {v.recommendedForCommitteeAssistant ? "Yes" : "No"}</div>
+                    <div className="grid grid-cols-2 gap-y-1.5 text-xs dark:text-slate-400 text-slate-500">
+                      <div><strong className="dark:text-slate-200 text-slate-700">Age:</strong> {age} yrs ({v.dob})</div>
+                      <div><strong className="dark:text-slate-200 text-slate-700">Assignment:</strong> {v.assignmentHeld}</div>
+                      <div><strong className="dark:text-slate-200 text-slate-700">Last worked:</strong> {v.lastConventionDate}</div>
+                      <div><strong className="dark:text-slate-200 text-slate-700">Committee Rec:</strong> {v.recommendedForCommitteeAssistant ? "Yes" : "No"}</div>
                     </div>
 
                     {isEvaluated && (
-                      <div className="p-3 bg-slate-950/40 rounded-xl border border-slate-800">
-                        <div className="text-[11px] uppercase tracking-wider font-bold text-slate-500">Recommendation</div>
+                      <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                        <div className="text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400">Recommendation</div>
                         <div className="text-xs font-medium text-indigo-400 mt-0.5">{v.evaluation.recommendation}</div>
-                        <div className="text-xs text-slate-400 mt-1.5 italic">"{v.evaluation.comments}"</div>
+                        <div className="text-xs text-slate-450 dark:text-slate-400 mt-1.5 italic">"{v.evaluation.comments}"</div>
                       </div>
                     )}
 
@@ -2146,6 +2204,73 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
           onClose={() => setVolunteerModal({ isOpen: false, type: 'add', data: null })}
           onSave={handleSaveVolunteer}
         />
+      )}
+
+      {/* Mobile Congregations Drawer */}
+      {isMobileCongListOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex justify-end lg:hidden animate-fadeIn">
+          <div className={`w-full max-w-xs h-full flex flex-col p-5 overflow-y-auto ${theme === 'dark' ? 'bg-slate-900 text-slate-100 border-l border-slate-800' : 'bg-white text-slate-900 border-l border-slate-200'}`}>
+            <div className="flex items-center justify-between border-b pb-4 mb-4 dark:border-slate-800 border-slate-200">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-indigo-400" />
+                <span className="text-sm font-bold uppercase tracking-wider text-slate-400">Congregations ({activeCongregations.length})</span>
+              </div>
+              <button 
+                onClick={() => setIsMobileCongListOpen(false)}
+                className={`p-1.5 rounded-lg border ${theme === 'dark' ? 'border-slate-800 hover:bg-slate-800' : 'border-slate-200 hover:bg-slate-100'}`}
+              >
+                <X className="w-4.5 h-4.5" />
+              </button>
+            </div>
+            
+            {selectedCongregation && (
+              <button 
+                onClick={() => {
+                  setSelectedCongregation(null);
+                  setIsMobileCongListOpen(false);
+                }}
+                className="w-full text-center text-xs font-bold py-2.5 mb-4 rounded-xl border border-rose-500/20 text-rose-400 bg-rose-500/5 hover:bg-rose-500/10 transition-all"
+              >
+                Clear Filter
+              </button>
+            )}
+
+            <div className="space-y-2 overflow-y-auto pr-1 flex-1">
+              {activeCongregations.map(cong => {
+                const isSelected = selectedCongregation === cong.name;
+                return (
+                  <button
+                    key={cong.name}
+                    onClick={() => {
+                      setSelectedCongregation(isSelected ? null : cong.name);
+                      setIsMobileCongListOpen(false);
+                    }}
+                    className={`w-full text-left text-xs p-3.5 rounded-xl transition-all flex flex-col gap-1.5 border ${
+                      isSelected 
+                        ? 'bg-indigo-600 border-indigo-500 text-white font-bold shadow-lg shadow-indigo-600/25' 
+                        : (theme === 'dark' ? 'bg-slate-950/40 border-slate-850 hover:bg-slate-800/50 text-slate-300' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700')
+                    }`}
+                  >
+                    <div className="flex justify-between items-center w-full">
+                      <span className="truncate flex-1 font-semibold">{cong.name}</span>
+                      {cong.circuit && (
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono shrink-0 ml-1.5 ${
+                          isSelected ? 'bg-indigo-500 text-white' : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+                        }`}>
+                          {cong.circuit}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex justify-between text-[10px] opacity-75">
+                      <span>{cong.coordinatorName || 'No Coordinator'}</span>
+                      {cong.number && <span>#{cong.number}</span>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ==========================================
