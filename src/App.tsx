@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { 
   Search, Plus, Edit2, Trash2, Moon, Sun, Check, X, 
   Upload, Download, Users, Award, 
@@ -649,65 +650,42 @@ Extract the details into a valid JSON array of objects. Map and find fields stri
 If a field is missing from the document, set it to an empty string ("") or null as appropriate.
 Only output a raw JSON array. Do not wrap the JSON output inside Markdown brackets or add prefix/suffix comments. Use valid double-quoted JSON formats.`;
 
-    const contentBlocks: any[] = [];
-
-    if (importFileBase64) {
-      let mimeTypeToSend = importFileMime || 'application/octet-stream';
-      if (importFile?.name.endsWith('.docx')) mimeTypeToSend = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-      if (importFile?.name.endsWith('.xlsx')) mimeTypeToSend = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-      if (importFile?.name.endsWith('.xls')) mimeTypeToSend = 'application/vnd.ms-excel';
-      if (importFile?.name.endsWith('.doc')) mimeTypeToSend = 'application/msword';
-
-      contentBlocks.push({
-        type: 'document',
-        source: {
-          type: 'base64',
-          media_type: mimeTypeToSend,
-          data: importFileBase64
-        }
-      });
-    }
-
-    let userTextPrompt = `Parse this roster list or document contents for volunteer evaluations.`;
-    if (importText) {
-      userTextPrompt += `\n\nText Contents:\n${importText}`;
-    }
-    contentBlocks.push({
-      type: 'text',
-      text: userTextPrompt
-    });
-
     try {
       setParseStep(`Uploading content (${importFile ? importFile.name : 'Raw Text'}) to AI Engine...`);
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'x-api-key': activeApiKey,
-          'anthropic-version': '2023-06-01',
-          'content-type': 'application/json',
-          'dangerously-allow-html-user-agents': 'true'
-        },
-        body: JSON.stringify({
-          model: 'claude-3-5-sonnet-latest',
-          max_tokens: 4000,
-          system: systemPrompt,
-          messages: [{ role: 'user', content: contentBlocks }]
-        })
-      });
+      
+      const ai = new GoogleGenerativeAI(activeApiKey);
+      const model = ai.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-      if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`Anthropic API status ${response.status}: ${errText}`);
+      let response;
+      if (importFileBase64) {
+        let userTextPrompt = `Parse this roster list or document contents for volunteer evaluations.`;
+        if (importText) {
+          userTextPrompt += `\n\nText Contents:\n${importText}`;
+        }
+        
+        response = await model.generateContent([
+          {
+            inlineData: {
+              data: importFileBase64.split(',')[1] || importFileBase64,
+              mimeType: importFileMime || 'application/pdf'
+            }
+          },
+          `${systemPrompt}\n\n${userTextPrompt}`
+        ]);
+      } else {
+        response = await model.generateContent([
+          `${systemPrompt}\n\nText Contents:\n${importText}`
+        ]);
       }
 
       setParseStep("Extracting entities, phone records, emails, and physical addresses...");
-      const resData = await response.json();
-      const parsedText = resData.content?.[0]?.text;
+      const parsedText = response.response.text();
       if (!parsedText) {
         throw new Error("No parsed structural result received from AI engine.");
       }
 
-      const parsedJSON = JSON.parse(parsedText.trim());
+      const cleanJson = parsedText.replace(/```json/g, '').replace(/```/g, '').trim();
+      const parsedJSON = JSON.parse(cleanJson);
       if (!Array.isArray(parsedJSON)) {
         throw new Error("Parsed response format is not a JSON array of objects.");
       }
@@ -739,7 +717,7 @@ Only output a raw JSON array. Do not wrap the JSON output inside Markdown bracke
       showToast(`AI successfully parsed ${finalCleanedList.length} volunteers!`, "success");
     } catch (error: any) {
       console.error(error);
-      const isAuthError = error.message?.includes("401") || error.message?.includes("403");
+      const isAuthError = error.message?.includes("401") || error.message?.includes("403") || error.message?.includes("API_KEY_INVALID");
       if (isAuthError) {
         setIsApiKeyModalOpen(true);
         showToast("AI key unauthorized or invalid. Please check your credentials.", "error");
@@ -812,59 +790,33 @@ If any Spanish terms are present in headers, translate or map them properly:
 
 Only output a raw JSON array of objects. Do not wrap the JSON output inside Markdown brackets or add prefix/suffix comments. Use valid double-quoted JSON formats.`;
 
-    const contentBlocks: any[] = [];
-    
-    let mimeTypeToSend = convFileMime || 'application/octet-stream';
-    if (convFile?.name.endsWith('.docx')) mimeTypeToSend = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-    if (convFile?.name.endsWith('.xlsx')) mimeTypeToSend = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-    if (convFile?.name.endsWith('.xls')) mimeTypeToSend = 'application/vnd.ms-excel';
-    if (convFile?.name.endsWith('.doc')) mimeTypeToSend = 'application/msword';
-
-    contentBlocks.push({
-      type: 'document',
-      source: {
-        type: 'base64',
-        media_type: mimeTypeToSend,
-        data: convFileBase64
-      }
-    });
-
-    contentBlocks.push({
-      type: 'text',
-      text: `Extract all congregation and coordinator rows from this document.`
-    });
-
     try {
-      setConvParseStep("Uploading document and parsing with Claude...");
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'x-api-key': activeApiKey,
-          'anthropic-version': '2023-06-01',
-          'content-type': 'application/json',
-          'dangerously-allow-html-user-agents': 'true'
-        },
-        body: JSON.stringify({
-          model: 'claude-3-5-sonnet-latest',
-          max_tokens: 4000,
-          system: systemPrompt,
-          messages: [{ role: 'user', content: contentBlocks }]
-        })
-      });
+      setConvParseStep("Uploading document and parsing with Gemini...");
+      
+      const ai = new GoogleGenerativeAI(activeApiKey);
+      const model = ai.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-      if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`Anthropic API status ${response.status}: ${errText}`);
-      }
+      const base64Clean = convFileBase64.split(',')[1] || convFileBase64;
+      const mime = convFileMime || 'application/pdf';
+
+      const response = await model.generateContent([
+        {
+          inlineData: {
+            data: base64Clean,
+            mimeType: mime
+          }
+        },
+        `${systemPrompt}\n\nExtract all congregation and coordinator rows from this document.`
+      ]);
 
       setConvParseStep("Structuring congregations and volunteer coordinator accounts...");
-      const resData = await response.json();
-      const parsedText = resData.content?.[0]?.text;
+      const parsedText = response.response.text();
       if (!parsedText) {
         throw new Error("No parsed structural result received from AI engine.");
       }
 
-      const parsedJSON = JSON.parse(parsedText.trim());
+      const cleanJson = parsedText.replace(/```json/g, '').replace(/```/g, '').trim();
+      const parsedJSON = JSON.parse(cleanJson);
       if (!Array.isArray(parsedJSON)) {
         throw new Error("Parsed response format is not a JSON array of objects.");
       }
@@ -895,7 +847,7 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
         address: "",
         evaluation: {
           grade: null,
-          comments: "Parsed automatically from convention import sheet",
+          comments: "",
           recommendation: null,
           evaluatedAt: null
         }
@@ -948,10 +900,16 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
       setConvFileBase64('');
       setIsAddConventionOpen(false);
 
-      showToast(`Convention "${newConvention.name}" created with ${congregationsList.length} congregations!`, "success");
+      showToast(`Convention "${newConvention.name}" successfully created with ${congregationsList.length} congregations!`, "success");
     } catch (error: any) {
       console.error(error);
-      showToast(`Convention Import Error: ${error.message || "Failed to process document structure."}`, "error");
+      const isAuthError = error.message?.includes("401") || error.message?.includes("403") || error.message?.includes("API_KEY_INVALID");
+      if (isAuthError) {
+        setIsApiKeyModalOpen(true);
+        showToast("AI key unauthorized or invalid. Please check your credentials.", "error");
+      } else {
+        showToast(`Import Error: ${error.message || "Failed to parse document structure."}`, "error");
+      }
     } finally {
       setIsConvParsing(false);
       setConvParseStep("");
@@ -1375,7 +1333,7 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
                         {convFile ? convFile.name : 'Select congregation roster file'}
                       </span>
                       <span className="text-xs text-slate-500 mt-1">
-                        Supports PDF, Word (.docx), or Excel (.xlsx, .csv)
+                        Supports PDF, Word (.docx), Excel, or Images (.png, .jpg, .webp)
                       </span>
                     </div>
                   )}
@@ -3151,7 +3109,7 @@ Brother Jonathan Mercer, Elder at Oakwood Pines, 407-555-0143, email: j.mercer@g
                   type="file"
                   onChange={handleConvFileChange}
                   disabled={isConvParsing}
-                  accept=".pdf,.docx,.doc,.xlsx,.xls,.csv"
+                  accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.png,.jpg,.jpeg,.webp"
                   className="hidden"
                   id="conv-file-upload-input"
                 />
