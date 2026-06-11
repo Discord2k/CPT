@@ -43,7 +43,7 @@ export const extractVolunteersFromDoc = async (
 
   try {
     const ai = new GoogleGenerativeAI(geminiKey);
-    const model = ai.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     let prompt = `
       You are an expert parsing assistant. Analyze the provided list, image, spreadsheet, document, or text describing convention volunteers.
@@ -324,7 +324,7 @@ export const extractCongregationsFromDoc = async (
 
   try {
     const ai = new GoogleGenerativeAI(geminiKey);
-    const model = ai.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     let prompt = `
       You are an expert document data extractor. You are parsing a congregation list, registry, or directory for a regional convention.
@@ -419,7 +419,7 @@ export const extractConventionDetailsFromDoc = async (
 
   try {
     const ai = new GoogleGenerativeAI(geminiKey);
-    const model = ai.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     let prompt = `
       You are an expert document data parser. Analyze the provided congregation roster directory or coordinator spreadsheet describing regional congregations.

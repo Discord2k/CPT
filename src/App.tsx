@@ -654,7 +654,7 @@ Only output a raw JSON array. Do not wrap the JSON output inside Markdown bracke
       setParseStep(`Uploading content (${importFile ? importFile.name : 'Raw Text'}) to AI Engine...`);
       
       const ai = new GoogleGenerativeAI(activeApiKey);
-      const model = ai.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
       let response;
       if (importFileBase64) {
@@ -794,7 +794,7 @@ Only output a raw JSON array of objects. Do not wrap the JSON output inside Mark
       setConvParseStep("Uploading document and parsing with Gemini...");
       
       const ai = new GoogleGenerativeAI(activeApiKey);
-      const model = ai.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
       const base64Clean = convFileBase64.split(',')[1] || convFileBase64;
       const mime = convFileMime || 'application/pdf';
